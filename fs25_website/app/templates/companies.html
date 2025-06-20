@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Companies</h2>
+
+<ul>
+  {% for company in companies %}
+    <li><strong>{{ company.name }}</strong>: {{ company.description }}</li>
+  {% else %}
+    <li>No companies created.</li>
+  {% endfor %}
+</ul>
+
+<h3>Create Company</h3>
+<form method="POST">
+  Name: <input type="text" name="name" required><br>
+  Description:<br>
+  <textarea name="description"></textarea><br>
+  <button type="submit">Create Company</button>
+</form>
+{% endblock %}

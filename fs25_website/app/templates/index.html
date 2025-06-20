@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FS25 Roleplay Server</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body {
+            background-color: #f4f4f4;
+            padding-top: 50px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            text-align: center;
+        }
+        h1 {
+            color: #3c763d;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        .nav a {
+            margin: 0 15px;
+            font-weight: bold;
+            color: #3c763d;
+        }
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        footer {
+            margin-top: 80px;
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚜 FS25 Roleplay Server</h1>
+        <p>Manage your farm, business, vehicles, permits, and DOT inspections – all in one place.</p>
+
+        <div class="nav">
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('auth.register') }}">Register</a>
+            <a href="{{ url_for('dot.dot_home') }}">DOT Dashboard</a>
+        </div>
+
+        <hr>
+
+        <section>
+            <h3>Features</h3>
+            <ul>
+                <li>✔️ Vehicle registration and inspections</li>
+                <li>✔️ Permit requests and DOT ticketing</li>
+                <li>✔️ Business and farm management tools</li>
+                <li>✔️ Real-time delivery and order system</li>
+            </ul>
+        </section>

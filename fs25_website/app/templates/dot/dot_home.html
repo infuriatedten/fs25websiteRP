@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>DOT Officer Home</h2>
+
+<h3>Your Tickets</h3>
+<ul>
+  {% for ticket in tickets %}
+    <li>Reason: {{ ticket.reason }} | Fine: {{ ticket.fine_amount }} | Paid: {{ 'Yes' if ticket.paid else 'No' }}</li>
+  {% else %}
+    <li>No tickets found.</li>
+  {% endfor %}
+</ul>
+
+<h3>Your Permits</h3>
+<ul>
+  {% for permit in permits %}
+    <li>Type: {{ permit.type }} | Status: {{ permit.status }}</li>
+  {% else %}
+    <li>No permits found.</li>
+  {% endfor %}
+</ul>
+
+{% if current_user.role in ['supervisor', 'admin'] %}
+<a href="{{ url_for('dot.supervisor_panel') }}">Supervisor Panel</a>
+{% endif %}
+{% endblock %}

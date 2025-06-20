@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Supervisor Panel</h2>
+
+<h3>Tickets</h3>
+<table border="1" cellpadding="5">
+  <tr>
+    <th>ID</th>
+    <th>Reason</th>
+    <th>Fine</th>
+    <th>Issued To</th>
+    <th>Paid</th>
+  </tr>
+  {% for ticket in tickets %}
+  <tr>
+    <td>{{ ticket.id }}</td>
+    <td>{{ ticket.reason }}</td>
+    <td>{{ ticket.fine_amount }}</td>
+    <td>{{ ticket.issued_to }}</td>
+    <td>{{ 'Yes' if ticket.paid else 'No' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Issue Ticket</h3>
+<form method="POST" action="{{ url_for('dot.issue_ticket') }}">
+  Reason: <input type="text" name="reason" required><br>
+  Fine Amount: <input type="number" name="fine_amount" required><br>
+  User ID: <input type="number" name="user_id" required><br>
+  <button type="submit">Issue Ticket</button>
+</form>
+
+<h3>Permits Pending Approval</h3>
+<ul>
+  {% for permit in permits %}
+    <li>
+      {{ permit.type }} by User {{ permit.owner_id }} - Status: {{ permit.status }}
+      <a href="{{ url_for('dot.approve_permit', permit_id=permit.id) }}">Approve</a> | 
+      <a href="{{ url_for('dot.reject_permit', permit_id=permit.id) }}">Reject</a>
+    </li>
+  {% else %}
+    <li>No pending permits.</li>
+  {% endfor %}
+</ul>
+
+<h3>Log Inspection</h3>
+<form method="POST" action="{{ url_for('dot.log_inspection') }}">
+  Vehicle ID: <input type="number" name="vehicle_id" required><br>
+  Passed: 
+  <select name="passed">
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select><br>
+  Notes:<br>
+  <textarea name="notes"></textarea><br>
+  <button type="submit">Log Inspection</button>
+</form>
+
+{% endblock %}

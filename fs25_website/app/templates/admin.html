@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">FS25 Admin</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dot.dot_home') }}">DOT Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dot.tickets') }}">Tickets</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dot.permits') }}">Permits</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dot.vehicles') }}">Vehicles</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.companies') }}">Companies</a></li>
+      </ul>
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('auth.logout') }}">Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <h2 class="mb-4">Admin Panel</h2>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Email</th>
+          <th>Current Role</th>
+          <th>Promote To</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.email }}</td>
+          <td>{{ user.role }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.promote_user') }}" class="d-flex align-items-center">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <select class="form-select me-2" name="role">
+                <option value="player" {% if user.role == 'player' %}selected{% endif %}>Player</option>
+                <option value="dot_officer" {% if user.role == 'dot_officer' %}selected{% endif %}>DOT Officer</option>
+                <option value="supervisor" {% if user.role == 'supervisor' %}selected{% endif %}>Supervisor</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+              </select>
+              <button type="submit" class="btn btn-sm btn-primary">Promote</button>
+            </form>
+          </td>
+          <td>
+            <!-- Reserved for future actions -->
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
