@@ -1,5 +1,10 @@
 Flask==2.3.2
 Flask-Login==0.6.2
-Flask-SQLAlchemy==3.0.5
 Flask-Migrate==4.0.4
-Werkzeug==2.3.7
+Flask-SQLAlchemy==3.0.2
+Werkzeug==2.3.4
+python-dotenv==1.0.0            # for environment variables
+Flask-WTF==1.1.1               # for form handling & CSRF protection
+email-validator==1.3.1          # for validating emails in WTForms
+pytest==7.4.2                  # for testing your app
+coverage==7.2.7                # to measure test coverage
