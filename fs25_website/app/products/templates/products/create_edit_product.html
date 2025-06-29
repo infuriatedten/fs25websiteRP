@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2>{{ title }}</h2>
+
+            {# General flashed messages (not field-specific validation errors) #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {# Filter out messages that are likely WTForms field errors, as they'll be shown by fields #}
+                        {% set is_field_error = false %}
+                        {% if form %}
+                            {% for field in form %}
+                                {% if message in field.errors %}
+                                    {% set is_field_error = true %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {% if not is_field_error %}
+                        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {# Determine form action URL based on whether 'product' object exists (for edit) #}
+            {% set form_action = url_for('products.edit_product', product_id=product.id) if product and product.id else url_for('products.create_product') %}
+
+            <form method="POST" action="{{ form_action }}" novalidate>
+                {{ form.hidden_tag() }} {# CSRF token and other hidden fields #}
+
+                <div class="mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Enter product name") }}
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.name.errors %}<span>{{ error }}</span><br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="3", placeholder="Enter product description (optional)") }}
+                    {% if form.description.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.description.errors %}<span>{{ error }}</span><br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.price.label(class="form-label") }}
+                        {{ form.price(class="form-control" + (" is-invalid" if form.price.errors else ""), placeholder="0.00") }}
+                        {% if form.price.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.price.errors %}<span>{{ error }}</span><br>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.quantity_available.label(class="form-label") }}
+                        {{ form.quantity_available(class="form-control" + (" is-invalid" if form.quantity_available.errors else ""), placeholder="0") }}
+                        {% if form.quantity_available.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.quantity_available.errors %}<span>{{ error }}</span><br>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check">
+                    {{ form.is_active(class="form-check-input") }}
+                    {{ form.is_active.label(class="form-check-label") }}
+                     {% if form.is_active.errors %} {# Should not happen for BooleanField with default if rendered correctly #}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.is_active.errors %}<span>{{ error }}</span><br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('products.my_products') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

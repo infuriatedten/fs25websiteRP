@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('dot.my_dot_tickets') }}" class="btn btn-outline-secondary">Back to My Tickets</a>
+    </div>
+
+    {% include "_flash_messages.html" %} {# Assuming _flash_messages.html for DRY flash rendering #}
+
+    {% if ticket %}
+    <div class="card">
+        <div class="card-header">
+            <h4>Ticket Details</h4>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Ticket ID:</dt><dd class="col-sm-9">{{ ticket.id }}</dd>
+                <dt class="col-sm-3">Reason/Offense:</dt><dd class="col-sm-9">{{ ticket.reason }}</dd>
+                <dt class="col-sm-3">Issuer Notes:</dt><dd class="col-sm-9">{{ ticket.notes if ticket.notes else 'N/A' }}</dd>
+                <dt class="col-sm-3">Vehicle Plate:</dt><dd class="col-sm-9">{{ ticket.linked_vehicle.plate if ticket.linked_vehicle else 'N/A' }}</dd>
+                {% if ticket.linked_vehicle %}
+                <dt class="col-sm-3">Vehicle Make/Model:</dt>
+                <dd class="col-sm-9">
+                    {{ ticket.linked_vehicle.make if ticket.linked_vehicle.make else '' }}
+                    {{ ticket.linked_vehicle.model if ticket.linked_vehicle.model else '' }}
+                    ({{ ticket.linked_vehicle.year if ticket.linked_vehicle.year else 'N/A' }})
+                </dd>
+                {% endif %}
+                <dt class="col-sm-3">Fine Amount:</dt>
+                <dd class="col-sm-9">
+                    {% if ticket.fine_amount > 0 %}${{ "%.2f"|format(ticket.fine_amount) }}{% else %}No Fine{% endif %}
+                </dd>
+                <dt class="col-sm-3">Status:</dt>
+                <dd class="col-sm-9">
+                    <span class="badge {% if ticket.status == TICKET_STATUS_PAID or ticket.status == TICKET_STATUS_RESOLVED %}bg-success{% elif ticket.status == TICKET_STATUS_UNPAID %}bg-danger{% elif ticket.status == TICKET_STATUS_DISPUTED %}bg-warning text-dark{% elif ticket.status == TICKET_STATUS_WARNING %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                        {{ ticket.status.replace('_', ' ')|title }}
+                    </span>
+                </dd>
+                {% if ticket.dispute_status and ticket.dispute_status != DISPUTE_STATUS_NONE %}
+                <dt class="col-sm-3">Dispute Status:</dt>
+                <dd class="col-sm-9"><span class="badge bg-light text-dark">{{ ticket.dispute_status.replace('_', ' ')|title }}</span></dd>
+                {% if ticket.dispute_reason %}
+                <dt class="col-sm-3">Your Dispute Reason:</dt>
+                <dd class="col-sm-9"><pre style="white-space: pre-wrap;">{{ ticket.dispute_reason }}</pre></dd>
+                {% endif %}
+                {% endif %}
+                <dt class="col-sm-3">Date Issued:</dt><dd class="col-sm-9">{{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+                <dt class="col-sm-3">Last Updated:</dt><dd class="col-sm-9">{{ ticket.updated_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.updated_at else ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+                {% if ticket.issuer %}<dt class="col-sm-3">Issuing Officer:</dt><dd class="col-sm-9">{{ ticket.issuer.username }}</dd>{% endif %}
+            </dl>
+            <hr>
+            <div class="mt-3">
+                {% if ticket.status == TICKET_STATUS_UNPAID and ticket.fine_amount > 0 %}
+                    <form action="{{ url_for('dot.pay_dot_ticket', ticket_id=ticket.id) }}" method="POST" style="display: inline-block;">
+                        {{ form.hidden_tag() if form else "" }} {# CSRF for pay action if it were a form #}
+                        <button type="submit" class="btn btn-success" onclick="return confirm('Pay fine of ${{ ticket.fine_amount|round(2) }}?');">
+                            Pay Fine (${{ "%.2f"|format(ticket.fine_amount) }})
+                        </button>
+                    </form>
+                {% endif %}
+                {# Only allow dispute if not already approved/rejected and is unpaid or already disputed #}
+                {% if ticket.dispute_status == DISPUTE_STATUS_NONE or ticket.dispute_status == DISPUTE_STATUS_PENDING %}
+                    {% if ticket.status == TICKET_STATUS_UNPAID or ticket.status == TICKET_STATUS_DISPUTED %}
+                    <button class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#disputeTicketModal">
+                        {% if ticket.status == TICKET_STATUS_DISPUTED %}Update Dispute{% else %}Dispute Ticket{% endif %}
+                    </button>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Dispute Modal Form #}
+    {% if (ticket.status == TICKET_STATUS_UNPAID or ticket.status == TICKET_STATUS_DISPUTED) and \
+          (ticket.dispute_status == DISPUTE_STATUS_NONE or ticket.dispute_status == DISPUTE_STATUS_PENDING) %}
+    <div class="modal fade" id="disputeTicketModal" tabindex="-1" aria-labelledby="disputeTicketModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('dot.view_dot_ticket', ticket_id=ticket.id) }}" novalidate> {# POST to the same view route #}
+                    {{ form.hidden_tag() }} {# CSRF from TicketDisputeForm #}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="disputeTicketModalLabel">
+                            {% if ticket.status == TICKET_STATUS_DISPUTED %}Update Your Dispute{% else %}Dispute Ticket #{{ ticket.id }}{% endif %}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Reason for Ticket:</strong> {{ ticket.reason }}</p>
+                        {% if ticket.dispute_reason and ticket.status == TICKET_STATUS_DISPUTED %}
+                            <p><strong>Current Dispute Reason:</strong><br><pre style="white-space: pre-wrap;">{{ ticket.dispute_reason }}</pre></p>
+                            <p><strong>Dispute Status:</strong> {{ ticket.dispute_status.replace('_', ' ')|title if ticket.dispute_status else 'N/A' }}</p>
+                            <hr>
+                            <p>You can update your dispute reason below:</p>
+                        {% else %}
+                            <p>Please provide a clear and concise reason for your dispute.</p>
+                        {% endif %}
+                        <div class="mb-3">
+                            {{ form.dispute_reason.label(class="form-label") }}
+                            {{ form.dispute_reason(class="form-control" + (" is-invalid" if form.dispute_reason.errors else ""), rows="5") }}
+                            {% if form.dispute_reason.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.dispute_reason.errors %}<span>{{ error }}</span><br>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        {{ form.submit_dispute(class="btn btn-warning") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %} {# End of dispute modal condition #}
+
+    {% else %}
+    <div class="alert alert-danger" role="alert">Ticket not found.</div>
+    {% endif %}
+</div>
+{% endblock %}

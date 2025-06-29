@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('dot.add_vehicle') }}" class="btn btn-success">Add New Vehicle</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if vehicles %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>License Plate</th>
+                        <th>Make</th>
+                        <th>Model</th>
+                        <th>Year</th>
+                        <th>Color</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td>{{ vehicle.plate }}</td>
+                        <td>{{ vehicle.make if vehicle.make else 'N/A' }}</td>
+                        <td>{{ vehicle.model if vehicle.model else 'N/A' }}</td>
+                        <td>{{ vehicle.year if vehicle.year else 'N/A' }}</td>
+                        <td>{{ vehicle.color if vehicle.color else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('dot.edit_vehicle', vehicle_id=vehicle.id) }}" class="btn btn-sm btn-outline-primary mb-1">Edit</a>
+                            <form action="{{ url_for('dot.delete_vehicle', vehicle_id=vehicle.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete vehicle {{ vehicle.plate }}?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger mb-1">Delete</button>
+                            </form>
+                            <!-- Link to view tickets for this vehicle could go here -->
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            You have not registered any vehicles yet. <a href="{{ url_for('dot.add_vehicle') }}" class="alert-link">Add one now!</a>
+        </div>
+    {% endif %}
+     <hr>
+    <p><a href="{{ url_for('dot.dot_home') }}">Back to DOT Main</a></p>
+</div>
+{% endblock %}

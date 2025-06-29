@@ -8,3 +8,6 @@ Flask-WTF==1.1.1               # for form handling & CSRF protection
 email-validator==1.3.1          # for validating emails in WTForms
 pytest==7.4.2                  # for testing your app
 coverage==7.2.7                # to measure test coverage
+Flask-Dance>=3.0.0             # For OAuth integration (Discord)
+gunicorn>=20.0.0               # WSGI server for production
+PyMySQL>=1.0.0                 # Pure Python MySQL database connector

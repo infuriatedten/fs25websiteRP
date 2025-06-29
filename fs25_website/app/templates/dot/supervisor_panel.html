@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>{{ title }}</h2>
+
+    {% include "_flash_messages.html" %} {# Assuming _flash_messages.html for DRY flash rendering #}
+
+    <ul class="nav nav-tabs" id="supervisorPanelTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-content" type="button" role="tab" aria-controls="tickets-content" aria-selected="true">Manage Tickets</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="disputes-tab" data-bs-toggle="tab" data-bs-target="#disputes-content" type="button" role="tab" aria-controls="disputes-content" aria-selected="false">Pending Disputes <span class="badge bg-warning text-dark ms-1">{{ disputed_tickets|length if disputed_tickets else 0 }}</span></button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="permits-tab" data-bs-toggle="tab" data-bs-target="#permits-content" type="button" role="tab" aria-controls="permits-content" aria-selected="false">Pending Permits <span class="badge bg-info text-dark ms-1">{{ pending_permits|length if pending_permits else 0 }}</span></button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="vehicles-tab" data-bs-toggle="tab" data-bs-target="#vehicles-content" type="button" role="tab" aria-controls="vehicles-content" aria-selected="false">All Vehicles</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="issue-actions-tab" data-bs-toggle="tab" data-bs-target="#issue-actions-content" type="button" role="tab" aria-controls="issue-actions-content" aria-selected="false">Issue/Log Actions</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        {# Manage Tickets Tab - existing content can be refined #}
+        <div class="tab-pane fade show active" id="tickets-content" role="tabpanel" aria-labelledby="tickets-tab">
+            <h4>All Tickets</h4>
+            {% if tickets %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover">
+                        <thead><tr><th>ID</th><th>Reason</th><th>Issued To</th><th>Vehicle</th><th>Fine</th><th>Status</th><th>Dispute</th><th>Issued</th><th>Actions</th></tr></thead>
+                        <tbody>
+                        {% for ticket in tickets %}
+                            <tr>
+                                <td>{{ ticket.id }}</td><td>{{ ticket.reason }}</td>
+                                <td>{{ ticket.recipient_user.username if ticket.recipient_user else 'N/A' }}</td>
+                                <td>{{ ticket.linked_vehicle.plate if ticket.linked_vehicle else 'N/A' }}</td>
+                                <td>${{ "%.2f"|format(ticket.fine_amount) }}</td>
+                                <td><span class="badge bg-info">{{ ticket.status|replace('_', ' ')|title }}</span></td>
+                                <td>{{ ticket.dispute_status|replace('_', ' ')|title if ticket.dispute_status != 'none' else 'No' }}</td>
+                                <td>{{ ticket.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td><a href="{{ url_for('dot.view_dot_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-info">Details</a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}<p>No tickets found.</p>{% endif %}
+        </div>
+
+        {# Pending Disputes Tab #}
+        <div class="tab-pane fade" id="disputes-content" role="tabpanel" aria-labelledby="disputes-tab">
+            <h4>Pending Ticket Disputes</h4>
+            {% if disputed_tickets and disputed_tickets|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover">
+                         <thead><tr><th>ID</th><th>Reason</th><th>User</th><th>Vehicle</th><th>Dispute Reason</th><th>Actions</th></tr></thead>
+                        <tbody>
+                        {% for ticket in disputed_tickets %}
+                            <tr>
+                                <td>{{ ticket.id }}</td><td>{{ ticket.reason }}</td>
+                                <td>{{ ticket.recipient_user.username if ticket.recipient_user else 'N/A' }}</td>
+                                <td>{{ ticket.linked_vehicle.plate if ticket.linked_vehicle else 'N/A' }}</td>
+                                <td><small>{{ ticket.dispute_reason|truncate(100) }}</small></td>
+                                <td style="min-width: 250px;">
+                                    <a href="{{ url_for('dot.view_dot_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-info mb-1 d-block">View Full Ticket</a>
+                                    <form action="{{ url_for('dot.manage_ticket_dispute', ticket_id=ticket.id, action='approve') }}" method="POST" class="mt-1">
+                                        {{ issue_ticket_form.hidden_tag() if issue_ticket_form else "" }} {# Example CSRF, adjust if form is specific #}
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text">Notes</span>
+                                            <input type="text" name="resolution_notes" class="form-control form-control-sm" placeholder="Optional resolution notes">
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-success d-block w-100">Approve Dispute</button>
+                                    </form>
+                                    <form action="{{ url_for('dot.manage_ticket_dispute', ticket_id=ticket.id, action='reject') }}" method="POST" class="mt-1">
+                                        {{ issue_ticket_form.hidden_tag() if issue_ticket_form else "" }} {# Example CSRF #}
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text">Notes</span>
+                                            <input type="text" name="resolution_notes" class="form-control form-control-sm" placeholder="Optional resolution notes">
+                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-danger d-block w-100">Reject Dispute</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}<p>No pending disputes.</p>{% endif %}
+        </div>
+
+        {# Pending Permits Tab #}
+        <div class="tab-pane fade" id="permits-content" role="tabpanel" aria-labelledby="permits-tab">
+            <h4>Pending Permits</h4>
+            {% if pending_permits %}
+                <ul class="list-group">
+                {% for permit in pending_permits %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Permit #{{ permit.id }} ({{ permit.type }}) for {{ permit.owner.username }}
+                        <div>
+                            <form action="{{ url_for('dot.approve_permit', permit_id=permit.id) }}" method="POST" style="display: inline;">
+                                {{ issue_ticket_form.hidden_tag() if issue_ticket_form else "" }} {# CSRF for simple POST actions #}
+                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                            <form action="{{ url_for('dot.reject_permit', permit_id=permit.id) }}" method="POST" style="display: inline;">
+                                 {{ issue_ticket_form.hidden_tag() if issue_ticket_form else "" }} {# CSRF #}
+                                 <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}<p>No pending permits.</p>{% endif %}
+        </div>
+
+        {# All Vehicles Tab #}
+        <div class="tab-pane fade" id="vehicles-content" role="tabpanel" aria-labelledby="vehicles-tab">
+            <h4>All Registered Vehicles</h4>
+             {% if all_vehicles %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover">
+                        <thead><tr><th>Plate</th><th>Make</th><th>Model</th><th>Owner</th><th>Actions</th></tr></thead>
+                        <tbody>
+                        {% for vehicle in all_vehicles %}
+                            <tr>
+                                <td>{{ vehicle.plate }}</td><td>{{ vehicle.make }}</td><td>{{ vehicle.model }}</td>
+                                <td>{{ vehicle.owner.username }}</td>
+                                <td><a href="{{ url_for('dot.edit_vehicle', vehicle_id=vehicle.id) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}<p>No vehicles registered.</p>{% endif %}
+        </div>
+
+        {# Issue/Log Actions Tab - Using WTForms #}
+        <div class="tab-pane fade" id="issue-actions-content" role="tabpanel" aria-labelledby="issue-actions-tab">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Issue New Ticket</h4>
+                    <form action="{{ url_for('dot.issue_ticket') }}" method="POST" novalidate>
+                        {{ issue_ticket_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ issue_ticket_form.user_id.label(class="form-label") }}
+                            {{ issue_ticket_form.user_id(class="form-control" + (" is-invalid" if issue_ticket_form.user_id.errors else "")) }}
+                            {% for error in issue_ticket_form.user_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ issue_ticket_form.vehicle_id.label(class="form-label") }}
+                            {{ issue_ticket_form.vehicle_id(class="form-control" + (" is-invalid" if issue_ticket_form.vehicle_id.errors else "")) }}
+                            {% for error in issue_ticket_form.vehicle_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ issue_ticket_form.reason.label(class="form-label") }}
+                            {{ issue_ticket_form.reason(class="form-control" + (" is-invalid" if issue_ticket_form.reason.errors else "")) }}
+                            {% for error in issue_ticket_form.reason.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ issue_ticket_form.notes.label(class="form-label") }}
+                            {{ issue_ticket_form.notes(class="form-control" + (" is-invalid" if issue_ticket_form.notes.errors else ""), rows="2") }}
+                            {% for error in issue_ticket_form.notes.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ issue_ticket_form.fine_amount.label(class="form-label") }}
+                            {{ issue_ticket_form.fine_amount(class="form-control" + (" is-invalid" if issue_ticket_form.fine_amount.errors else "")) }}
+                            {% for error in issue_ticket_form.fine_amount.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        {{ issue_ticket_form.issue_ticket_submit(class="btn btn-warning") }}
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <h4>Log Inspection</h4>
+                     <form action="{{ url_for('dot.log_inspection') }}" method="POST" novalidate>
+                        {{ log_inspection_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ log_inspection_form.vehicle_id.label(class="form-label") }}
+                            {{ log_inspection_form.vehicle_id(class="form-control" + (" is-invalid" if log_inspection_form.vehicle_id.errors else "")) }}
+                            {% for error in log_inspection_form.vehicle_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3 form-check">
+                            {{ log_inspection_form.passed(class="form-check-input" + (" is-invalid" if log_inspection_form.passed.errors else "")) }}
+                            {{ log_inspection_form.passed.label(class="form-check-label") }}
+                            {% for error in log_inspection_form.passed.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ log_inspection_form.notes.label(class="form-label") }}
+                            {{ log_inspection_form.notes(class="form-control" + (" is-invalid" if log_inspection_form.notes.errors else ""), rows="2") }}
+                             {% for error in log_inspection_form.notes.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        {{ log_inspection_form.log_inspection_submit(class="btn btn-info") }}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Include a general flash message display partial if created, e.g. _flash_messages.html #}
+{# {% include "_flash_messages.html" %} #}
+{% endblock %}

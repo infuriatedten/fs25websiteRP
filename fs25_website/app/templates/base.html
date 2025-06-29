@@ -15,19 +15,52 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       {% if current_user.is_authenticated %}
       <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.player_home') }}">Dashboard</a></li>
         {% if current_user.role == 'admin' %}
-        <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li> {# Assuming admin.admin_dashboard exists #}
         {% elif current_user.role == 'dot_officer' %}
-        <li class="nav-item"><a class="nav-link" href="/dot">DOT</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('dot.supervisor_panel') }}">DOT Panel</a></li>
         {% elif current_user.role == 'supervisor' %}
-        <li class="nav-item"><a class="nav-link" href="/supervisor">Supervisor</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('supervisor.supervisor_home') }}">Supervisor</a></li> {# Assuming supervisor.supervisor_home exists #}
         {% endif %}
-        <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarProductsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                E-Commerce
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarProductsDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('products.list_products') }}">Marketplace</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('products.my_products') }}">My Products</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('products.create_product') }}">List New Product</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.bank_transactions') }}">My Bank & Transactions</a></li>
+            </ul>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDotDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                DOT Services
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDotDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('dot.my_vehicles') }}">My Vehicles</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('dot.my_dot_tickets') }}">My DOT Tickets</a></li>
+                {% if current_user.role in ['dot_officer', 'supervisor', 'admin'] %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('dot.supervisor_panel') }}">DOT Supervisor Panel</a></li>
+                {% endif %}
+                <!-- Add other DOT related links here if needed -->
+            </ul>
+        </li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
+      </ul>
+      <ul class="navbar-nav ms-auto"> <!-- Separate ul for right-aligned items -->
+        <li class="nav-item">
+            <span class="navbar-text">Balance: <strong>${{ "%.2f"|format(current_user.balance) }}</strong></span>
+        </li>
       </ul>
       {% else %}
-      <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+      <ul class="navbar-nav ms-auto"> <!-- Added ms-auto to push login/register to the right -->
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('products.list_products') }}">Marketplace</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
       </ul>
       {% endif %}
     </div>
@@ -35,13 +68,14 @@
 </nav>
 
 <div class="container mt-4">
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="alert alert-info">
-          {% for message in messages %}
-            <p>{{ message }}</p>
-          {% endfor %}
-        </div>
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}

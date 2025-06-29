@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('dot.view_dot_ticket', ticket_id=ticket.id) if ticket else url_for('dot.supervisor_panel') }}" class="btn btn-outline-secondary">Back to Ticket Details</a>
+    </div>
+
+    {% include "_flash_messages.html" %} {# Assumes _flash_messages.html exists in templates/includes or similar #}
+
+    {% if ticket %}
+        <p><strong>Ticket ID:</strong> {{ ticket.id }}</p>
+        <p><strong>Reason:</strong> {{ ticket.reason }}</p>
+        <hr>
+        <h4>Items/Services for this Ticket</h4>
+        {% if items and items|length > 0 %}
+            <ul class="list-group mb-3">
+                {% for item in items %}
+                    <li class="list-group-item">
+                        {{ item.item_name }} - Quantity: {{ item.quantity }}, Price/Unit: ${{ "%.2f"|format(item.price_per_unit) }}, Total: ${{ "%.2f"|format(item.total_price) }}
+                    </li>
+                {% endfor %}
+            </ul>
+            <p><strong>Total for Items:</strong> ${{ "%.2f"|format(items|sum(attribute='total_price')) }}</p>
+            <p><strong>Ticket Fine Amount:</strong> ${{ "%.2f"|format(ticket.fine_amount) }}</p>
+            <p><strong>Overall Ticket Total:</strong> ${{ "%.2f"|format(ticket.total_price) }}</p>
+        {% else %}
+            <p>No items have been added to this ticket yet.</p>
+        {% endif %}
+
+        {% if current_user.role in ['admin', 'supervisor', 'dot_officer'] %}
+        <hr>
+        <h4>Add New Item/Service to Ticket</h4>
+        <form method="POST" action="{{ url_for('dot.ticket_items', ticket_id=ticket.id) }}" novalidate>
+            {{ form.hidden_tag() }} {# CSRF token for TicketItemForm #}
+            <div class="row">
+                <div class="col-md-5 mb-3">
+                    {{ form.item_name.label(class="form-label") }}
+                    {{ form.item_name(class="form-control" + (" is-invalid" if form.item_name.errors else "")) }}
+                    {% if form.item_name.errors %}
+                        <div class="invalid-feedback">{% for error in form.item_name.errors %}<span>{{ error }}</span><br>{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3 mb-3">
+                    {{ form.quantity.label(class="form-label") }}
+                    {{ form.quantity(class="form-control" + (" is-invalid" if form.quantity.errors else "")) }}
+                    {% if form.quantity.errors %}
+                        <div class="invalid-feedback">{% for error in form.quantity.errors %}<span>{{ error }}</span><br>{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-3 mb-3">
+                    {{ form.price_per_unit.label(class="form-label") }}
+                    {{ form.price_per_unit(class="form-control" + (" is-invalid" if form.price_per_unit.errors else "")) }}
+                    {% if form.price_per_unit.errors %}
+                        <div class="invalid-feedback">{% for error in form.price_per_unit.errors %}<span>{{ error }}</span><br>{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-1 align-self-end mb-3">
+                     {{ form.add_item(class="btn btn-primary") }}
+                </div>
+            </div>
+        </form>
+        {% endif %}
+    {% else %}
+        <p class="text-danger">Ticket not found.</p>
+    {% endif %}
+</div>
+{% endblock %}

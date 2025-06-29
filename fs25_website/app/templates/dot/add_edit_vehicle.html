@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2>{{ title }}</h2>
+
+            {# General flashed messages (not field-specific validation errors from WTForms) #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% set is_field_error = false %}
+                        {% if form %}
+                            {% for field in form %}
+                                {% if message in field.errors %}
+                                    {% set is_field_error = true %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {% if not is_field_error %}
+                        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="" novalidate> {# Action URL is set by Flask if not specified, or can be explicit #}
+                {{ form.hidden_tag() }} {# CSRF token #}
+
+                <div class="mb-3">
+                    {{ form.plate.label(class="form-label") }} <span class="text-danger">*</span>
+                    {{ form.plate(class="form-control" + (" is-invalid" if form.plate.errors else ""), placeholder="e.g., ABC-123") }}
+                    {% if form.plate.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.plate.errors %}<span>{{ error }}</span><br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.make.label(class="form-label") }}
+                    {{ form.make(class="form-control" + (" is-invalid" if form.make.errors else ""), placeholder="e.g., Ford") }}
+                    {% if form.make.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.make.errors %}<span>{{ error }}</span><br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.model.label(class="form-label") }}
+                    {{ form.model(class="form-control" + (" is-invalid" if form.model.errors else ""), placeholder="e.g., Ranger") }}
+                    {% if form.model.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.model.errors %}<span>{{ error }}</span><br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.year.label(class="form-label") }}
+                        {{ form.year(class="form-control" + (" is-invalid" if form.year.errors else ""), placeholder="e.g., 2023") }}
+                        {% if form.year.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.year.errors %}<span>{{ error }}</span><br>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.color.label(class="form-label") }}
+                        {{ form.color(class="form-control" + (" is-invalid" if form.color.errors else ""), placeholder="e.g., Blue") }}
+                        {% if form.color.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.color.errors %}<span>{{ error }}</span><br>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('dot.my_vehicles') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var plateInput = document.getElementById('plate');
+    if (plateInput) {
+        // Convert to uppercase as user types
+        plateInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+        // Also ensure it's uppercase on blur in case of paste
+        plateInput.addEventListener('blur', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+});
+</script>
+{% endblock %}

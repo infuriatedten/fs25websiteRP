@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ title }}</h2>
+        {# Optional: Link to relevant DOT info or FAQ #}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if tickets %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Reason/Offense</th>
+                        <th>Vehicle Plate</th>
+                        <th>Fine Amount</th>
+                        <th>Status</th>
+                        <th>Date Issued</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>{{ ticket.id }}</td>
+                        <td>{{ ticket.reason }}</td>
+                        <td>{{ ticket.linked_vehicle.plate if ticket.linked_vehicle else 'N/A' }}</td>
+                        <td>
+                            {% if ticket.fine_amount > 0 %}
+                                ${{ "%.2f"|format(ticket.fine_amount) }}
+                            {% else %}
+                                N/A (Warning/Compliance)
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge
+                                {% if ticket.status == 'paid' or ticket.status == 'resolved' %}bg-success
+                                {% elif ticket.status == 'unpaid' %}bg-danger
+                                {% elif ticket.status == 'disputed' %}bg-warning text-dark
+                                {% elif ticket.status == 'warning_issued' %}bg-info text-dark
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ ticket.status.replace('_', ' ')|title }}
+                            </span>
+                            {% if ticket.dispute_status and ticket.dispute_status != 'none' %}
+                                <br><small class="text-muted">Dispute: {{ ticket.dispute_status.replace('_', ' ')|title }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('dot.view_dot_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-info">View Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            You have no DOT tickets on record.
+        </div>
+    {% endif %}
+    <hr>
+    <p><a href="{{ url_for('dot.dot_home') }}">Back to DOT Main</a></p>
+</div>
+{% endblock %}
