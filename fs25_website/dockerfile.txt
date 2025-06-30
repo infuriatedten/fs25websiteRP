@@ -1,0 +1,27 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set environment variables for Python to prevent writing .pyc files and to run in unbuffered mode
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the requirements file into the container at /app
+# This assumes your requirements.txt is at the root of your Git repository
+COPY requirements.txt requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire 'fs25_website' directory into the container at /app/fs25_website
+# This assumes your application code, including run.py, is within 'fs25_website'
+COPY fs25_website/ /app/fs25_website/
+
+# Render injects the PORT variable. Gunicorn will bind to it.
+# The EXPOSE instruction is good practice but not strictly necessary for Render if Gunicorn binds to $PORT.
+# EXPOSE 8000 # Or whatever port Gunicorn would default to if $PORT wasn't used
+
+# Define the command to run your application using Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--chdir", "/app/fs25_website", "run:app"]
